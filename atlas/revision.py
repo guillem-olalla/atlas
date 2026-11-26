@@ -8,6 +8,7 @@ El cliente es cualquier objeto con json(url), crudo(url) y paginar(url) (ver git
 """
 from __future__ import annotations
 
+import ipaddress
 import re
 from urllib.parse import quote
 
@@ -54,9 +55,18 @@ def terminos_privados(m: dict, infos: dict[str, dict], repo_datos: str | None) -
     for n in m["nodos"]:
         if n.get("cliente"):
             terminos.add(str(n["cliente"]))
-        terminos |= set(PATRON_IPV4.findall(str(n.get("donde", ""))))
-        terminos |= set(PATRON_IPV4.findall(str(n.get("identidad", ""))))
+        for campo in ("donde", "identidad"):
+            terminos |= {ip for ip in PATRON_IPV4.findall(str(n.get(campo, ""))) if _ip_que_identifica(ip)}
     return {t for t in terminos if len(t) >= 4}
+
+
+def _ip_que_identifica(texto: str) -> bool:
+    """Las de loopback y la no especificada no dicen nada de nadie; cualquier otra IP del manifiesto si."""
+    try:
+        ip = ipaddress.IPv4Address(texto)
+    except ValueError:
+        return False
+    return not (ip.is_loopback or ip.is_unspecified)
 
 
 def revisar_privacidad(cliente, repo_publico: str, terminos: set[str]) -> list[str]:

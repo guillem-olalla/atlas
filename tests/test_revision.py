@@ -94,6 +94,15 @@ def test_terminos_privados(m):
     assert terminos == {"ejemplo/app", "ClienteUno"}
 
 
+def test_loopback_y_cero_no_son_privadas(m):
+    # Regresion: 127.0.0.1 en el `donde` de un nodo marcaba como privado cualquier archivo con loopback.
+    loopback = ".".join(["127", "0", "0", "1"])
+    cero = ".".join(["0", "0", "0", "0"])
+    m["nodos"][0]["donde"] = f"servidor, {loopback}:8790 y {cero}"
+    m["nodos"][1]["identidad"] = f"escucha en {loopback}"
+    assert terminos_privados(m, {}, None) == set()
+
+
 @pytest.mark.parametrize("desajustes", [[], ["uno", "dos"]])
 def test_informe(desajustes):
     texto = informe(desajustes, "2026-01-01 04:30 UTC")
