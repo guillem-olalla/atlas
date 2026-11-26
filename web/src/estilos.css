@@ -1,0 +1,239 @@
+:root {
+  --hecho: #2e7d32;
+  --en_curso: #1565c0;
+  --bloqueado: #c62828;
+  --pendiente: #757575;
+  --desconocido: #ef6c00;
+  --fondo: #fafafa;
+  --borde: #d0d0d0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+  color: #1f1f1f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#raiz {
+  margin: 0;
+  height: 100%;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--borde);
+  background: #fff;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.sello {
+  margin-left: auto;
+  color: #555;
+  font-size: 12px;
+}
+
+.chip {
+  display: inline-block;
+  margin: 0 3px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 12px;
+}
+
+.chip.estado-hecho { background: var(--hecho); }
+.chip.estado-en_curso { background: var(--en_curso); }
+.chip.estado-bloqueado { background: var(--bloqueado); }
+.chip.estado-pendiente { background: var(--pendiente); }
+.chip.estado-desconocido { background: var(--desconocido); }
+
+.avisos {
+  padding: 6px 14px;
+  background: #fff3e0;
+  border-bottom: 1px solid #ffb74d;
+}
+
+.aviso {
+  font-weight: 600;
+}
+
+.aviso-error,
+.aviso-token {
+  color: #b71c1c;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.filtros {
+  width: 250px;
+  overflow-y: auto;
+  padding: 10px;
+  border-right: 1px solid var(--borde);
+  background: #fff;
+}
+
+.filtros fieldset {
+  margin: 10px 0;
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+}
+
+.filtros label {
+  display: block;
+  margin: 3px 0;
+}
+
+.filtros input[type="number"] {
+  width: 48px;
+}
+
+.aislados {
+  margin: 6px 0;
+  font-size: 12px;
+  color: #444;
+}
+
+.lienzo {
+  flex: 1;
+  min-width: 0;
+  background: var(--fondo);
+}
+
+.carril {
+  border: 1px dashed #b0b0b0;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.025);
+  pointer-events: none;
+}
+
+.carril-nombre {
+  padding: 8px 12px;
+  font-weight: 700;
+  color: #555;
+}
+
+.pieza {
+  width: 200px;
+  height: 52px;
+  padding: 6px 8px;
+  border: 1px solid var(--borde);
+  border-left: 6px solid var(--pendiente);
+  border-radius: 6px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.pieza.estado-hecho { border-left-color: var(--hecho); }
+.pieza.estado-en_curso { border-left-color: var(--en_curso); background: #e3f2fd; }
+.pieza.estado-bloqueado { border-left-color: var(--bloqueado); background: #ffebee; }
+.pieza.estado-pendiente { border-left-color: var(--pendiente); border-style: dashed; border-left-style: solid; }
+.pieza.estado-desconocido { border-left-color: var(--desconocido); }
+.pieza.elegida { outline: 3px solid #ffb300; }
+
+.pieza-nombre {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pieza-meta {
+  font-size: 11px;
+  color: #555;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.arista-elegida path {
+  stroke: #ffb300 !important;
+  stroke-width: 2.5px !important;
+}
+
+.mini-hecho { fill: var(--hecho); }
+.mini-en_curso { fill: var(--en_curso); }
+.mini-bloqueado { fill: var(--bloqueado); }
+.mini-pendiente { fill: var(--pendiente); }
+.mini-desconocido { fill: var(--desconocido); }
+.mini-carril { fill: transparent; }
+
+.detalle {
+  position: relative;
+  width: 320px;
+  overflow-y: auto;
+  padding: 10px 14px;
+  border-left: 1px solid var(--borde);
+  background: #fff;
+}
+
+.detalle h2 {
+  margin: 4px 24px 6px 0;
+  font-size: 16px;
+}
+
+.detalle dl div {
+  display: flex;
+  gap: 8px;
+  margin: 3px 0;
+}
+
+.detalle dt {
+  width: 74px;
+  flex: none;
+  color: #666;
+}
+
+.detalle dd {
+  margin: 0;
+  word-break: break-word;
+}
+
+.llamadas {
+  padding-left: 16px;
+  font-size: 12px;
+}
+
+.llamadas button {
+  padding: 0;
+  border: none;
+  background: none;
+  color: #1565c0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.cerrar {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  border: none;
+  background: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.cargando {
+  padding: 40px;
+  font-size: 16px;
+}

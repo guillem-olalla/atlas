@@ -1,0 +1,40 @@
+# Publica la imagen en GHCR en cada push a main y deja su digest en el resumen del job.
+# El servidor se despliega con ese digest (deploy/desplegar.sh), nunca con un tag.
+name: publicar
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: publicar
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    name: publicar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: construir
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          provenance: false
+          tags: ghcr.io/${{ github.repository_owner }}/atlas:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+      - name: Digest para desplegar
+        run: echo "ghcr.io/${{ github.repository_owner }}/atlas@${{ steps.construir.outputs.digest }}" | tee -a "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,81 @@
+# Checks obligatorios de main (ruleset): python, web e imagen.
+# Este repo es publico: aqui solo entran datos de ejemplo, nunca el manifiesto real.
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: python
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt
+      - run: python -m pytest
+      - name: Validar el manifiesto de ejemplo con la linea de comandos
+        run: python -m atlas validar tests/datos/harness.yaml
+
+  web:
+    name: web
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Tamano de node_modules (para el informe; en C no se instala nunca)
+        run: du -sh node_modules | tee -a "$GITHUB_STEP_SUMMARY"
+      - run: npm test
+      - run: npm run build
+      - name: Tamano del paquete
+        run: du -sh dist | tee -a "$GITHUB_STEP_SUMMARY"
+
+  imagen:
+    name: imagen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir la imagen (sin publicar)
+        run: docker build -t atlas:ci .
+      - name: Tamano de la imagen
+        run: docker image inspect atlas:ci --format '{{.Size}}' | awk '{printf "imagen %.0f MB\n", $1/1048576}' | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Arranca sin root, solo lectura y con 128 MB, y responde /salud y la web
+        run: |
+          mkdir -p /tmp/atlas
+          echo "token-de-prueba" > /tmp/atlas/token
+          chmod 644 /tmp/atlas/token
+          docker run -d --name atlas --read-only --tmpfs /tmp:size=16m --cap-drop ALL \
+            --security-opt no-new-privileges:true --memory 128m \
+            -e ATLAS_REPO=ejemplo/datos -e ATLAS_MANIFIESTO=harness.yaml \
+            -e ATLAS_TOKEN_FILE=/run/secrets/github_token \
+            -v /tmp/atlas/token:/run/secrets/github_token:ro \
+            -p 127.0.0.1:8790:8790 atlas:ci
+          for i in $(seq 1 30); do curl -s -o /dev/null http://127.0.0.1:8790/salud && break; sleep 1; done
+          # Sin token valido GitHub responde 401: /salud da 503 con el error, y la web se sirve igual.
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8790/salud)" = "503"
+          curl -s http://127.0.0.1:8790/salud | tee /dev/stderr | grep -q "GitHub respondio 401"
+          curl -s http://127.0.0.1:8790/ | grep -q "<title>Atlas</title>"
+          docker stats --no-stream --format 'memoria {{.MemUsage}}' atlas | tee -a "$GITHUB_STEP_SUMMARY"
+          test "$(docker exec atlas id -u)" != "0"
+      - if: always()
+        run: docker logs atlas 2>&1 | tail -20 || true

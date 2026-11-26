@@ -1,0 +1,38 @@
+# Manifiesto de ejemplo con nombres genericos. Los tests y la demo no ven nunca el real.
+version: 1
+actualizado: 2026-01-01
+
+capas:
+  - {id: personas, orden: 1, nombre: Personas}
+  - {id: codigo, orden: 2, nombre: Codigo}
+  - {id: servidor, orden: 3, nombre: Servidor}
+
+tipos_nodo: [agente, proceso, servicio, almacen, persona, api]
+tipos_arista: [lee, escribe, dispara, revisa, despliega, notifica]
+fases: [F0, F1, F2]
+riesgos: [bajo, medio, alto]
+marcas: [personal]
+
+nodos:
+  - {id: persona-a, nombre: Persona A, capa: personas, tipo: persona, fase: F0, dueno: persona-a, riesgo: alto,
+     ejecuta: humano, identidad: cuenta propia, donde: portatil, existe: true}
+  - {id: repo-app, nombre: app, capa: codigo, tipo: almacen, fase: F0, dueno: persona-a, riesgo: medio,
+     ejecuta: script, identidad: ninguna, donde: GitHub, existe: true, enlaces: {repo: ejemplo/app},
+     cubre: ["ejemplo/app:.github/workflows/ci.yml"]}
+  - {id: repo-infra, nombre: infra, capa: codigo, tipo: almacen, fase: F0, dueno: persona-a, riesgo: medio,
+     ejecuta: script, identidad: ninguna, donde: GitHub, existe: true, enlaces: {repo: ejemplo/infra}}
+  - {id: agente-x, nombre: Agente X, capa: servidor, tipo: agente, fase: F1, dueno: persona-a, riesgo: alto,
+     ejecuta: modelo, identidad: clave de API, donde: servidor, existe: false, issue: 1, marcas: [personal],
+     enlaces: {repo: ejemplo/app}, cubre: ["ejemplo/app:deploy/compose.yaml#agente"]}
+  - {id: servicio-y, nombre: Servicio Y, capa: servidor, tipo: servicio, fase: F1, dueno: persona-a, riesgo: medio,
+     ejecuta: script, identidad: ninguna, donde: servidor, existe: true, mejoras: [2],
+     cubre: ["ejemplo/infra:servicio-y/compose.yaml#y", "ejemplo/infra:servicio-y/copia.timer"]}
+  - {id: tarea-z, nombre: Tarea Z, capa: servidor, tipo: proceso, fase: F2, dueno: persona-a, riesgo: bajo,
+     ejecuta: mixto, identidad: clave de API, donde: servidor, existe: false, issue: 3}
+
+aristas:
+  - {de: persona-a, a: repo-app, tipo: escribe, protocolo: git}
+  - {de: repo-app, a: agente-x, tipo: despliega, protocolo: imagen}
+  - {de: agente-x, a: servicio-y, tipo: lee, protocolo: HTTP}
+  - {de: servicio-y, a: tarea-z, tipo: dispara, protocolo: cada hora}
+  - {de: repo-infra, a: servicio-y, tipo: despliega, protocolo: compose}
