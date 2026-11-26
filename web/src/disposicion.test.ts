@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { disponer } from "./disposicion";
+import { disponer, FILAS } from "./disposicion";
 import type { Arista, Capa, Nodo } from "./modelo";
 
 const capas: Capa[] = [
@@ -45,6 +45,18 @@ describe("disposicion por carriles", () => {
       expect(p.x).toBeGreaterThanOrEqual(c.x);
       expect(p.x).toBeLessThanOrEqual(c.x + c.ancho);
     }
+  });
+
+  it("una capa larga se parte en subcolumnas de FILAS como mucho, dentro de su carril", async () => {
+    const muchas = Array.from({ length: 30 }, (_, i) => nodo(`n${i}`, "c2"));
+    const { posiciones, carriles } = await disponer(capas, [nodo("a", "c1"), ...muchas], []);
+    const ys = new Set(posiciones.filter((p) => p.id !== "a").map((p) => p.y));
+    const xs = new Set(posiciones.filter((p) => p.id !== "a").map((p) => p.x));
+    expect(xs.size).toBe(Math.ceil(30 / FILAS));
+    expect(ys.size).toBeLessThanOrEqual(FILAS);
+    const c2 = carriles.find((c) => c.capa.id === "c2")!;
+    for (const x of xs) expect(x + 200).toBeLessThanOrEqual(c2.x + c2.ancho);
+    expect(c2.x).toBeGreaterThan(carriles[0].x + carriles[0].ancho);
   });
 
   it("sin piezas no hay carriles", async () => {

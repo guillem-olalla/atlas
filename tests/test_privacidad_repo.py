@@ -28,7 +28,7 @@ def test_sin_ips_ni_correos():
     for ruta in _archivos():
         texto = ruta.read_text(encoding="utf-8")
         for ip in set(IPV4.findall(texto)) - PERMITIDAS:
-            # Versiones como 1.2.3.4 en dependencias tambien casan; aqui no hay ninguna legitima.
+            # Una version de cuatro numeros tambien casaria; aqui no hay ninguna legitima.
             hallazgos.append(f"{ruta.relative_to(RAIZ)}: {ip}")
         for correo in set(CORREO.findall(texto)) - CORREOS_PERMITIDOS:
             hallazgos.append(f"{ruta.relative_to(RAIZ)}: {correo}")
