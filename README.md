@@ -27,7 +27,11 @@ Nada se instala ni se construye en el portátil: `npm ci`, los tests y el build 
 
 ## Despliegue
 
-Solo por digest, con `deploy/desplegar.sh`, en un contenedor sin root, de solo lectura, con `mem_limit` de 128 MB, escuchando en `127.0.0.1:8790` y publicado solo en la red privada con `tailscale serve` (nunca con Funnel). El token va como secreto de Compose en un archivo `root:atlas 640`. Ver `deploy/`.
+Solo por digest, con `deploy/desplegar.sh`, en un contenedor sin root, de solo lectura, con `mem_limit` de 128 MB, escuchando en `127.0.0.1:8790` y publicado solo en la red privada con `tailscale serve` (nunca con Funnel). El token va como secreto de Compose en un archivo `root:atlas 640`.
+
+1. Una vez, con sudo: `sudo bash deploy/preparar.sh DUENO/REPO-DE-DATOS ruta/al/manifiesto.yaml`. Crea el usuario `atlas`, `/srv/atlas`, el archivo vacío del token y `tailscale serve` en el 8443.
+2. Una persona rellena el token sin que pase por la línea de comandos: `sudo sh -c 'cat > /srv/atlas/secrets/github_token'`, pega, Intro y Ctrl-D.
+3. Cada versión, sin sudo, desde un usuario del grupo docker: `/srv/atlas/desplegar.sh ghcr.io/DUENO/atlas@sha256:…`, con el digest que deja `publicar.yml`.
 
 ## v2
 

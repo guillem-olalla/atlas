@@ -1,25 +1,32 @@
 #!/usr/bin/env bash
-# Despliega el Atlas en el servidor, solo por digest.
+# Despliega el Atlas en el servidor, solo por digest. Lo ejecuta un usuario del grupo docker, sin sudo.
 #
-#   sudo /srv/atlas/desplegar.sh ghcr.io/DUENO/atlas@sha256:<64 hex>
+#   /srv/atlas/desplegar.sh ghcr.io/DUENO/atlas@sha256:<64 hex>
 #
-# Espera en /srv/atlas: compose.yaml, atlas.env (root:atlas 640) y secrets/github_token
-# (root:atlas 640, en secrets/ root:atlas 750). El usuario de sistema `atlas` tiene que existir.
+# Lo deja preparado deploy/preparar.sh (una vez, con sudo):
+#   /srv/atlas/compose.yaml y atlas.env       root:root 644
+#   /srv/atlas/secrets/                       root:atlas 711 (se puede comprobar, no listar)
+#   /srv/atlas/secrets/github_token           root:atlas 640 (solo lo leen root y el contenedor)
+#   /srv/atlas/despliegue/                    del usuario que despliega: imagen actual y anterior
 # Si el contenedor no queda healthy en 90 s, vuelve a la imagen anterior (si la hay) y sale con 1.
-# Volver atras a mano: sudo /srv/atlas/desplegar.sh "$(cat /srv/atlas/imagen.anterior)"
+# Volver atras a mano: /srv/atlas/desplegar.sh "$(cat /srv/atlas/despliegue/imagen.anterior)"
 set -euo pipefail
 
 DIR=/srv/atlas
+ESTADO="$DIR/despliegue"
 IMAGEN="${1:-}"
 if [[ ! "$IMAGEN" =~ ^ghcr\.io/[a-z0-9-]+/atlas@sha256:[0-9a-f]{64}$ ]]; then
   echo "uso: $0 ghcr.io/DUENO/atlas@sha256:<digest>  (solo por digest, nunca por tag)" >&2
   exit 2
 fi
-for f in "$DIR/compose.yaml" "$DIR/atlas.env" "$DIR/secrets/github_token"; do
+for f in "$DIR/compose.yaml" "$DIR/atlas.env"; do
   [[ -f "$f" ]] || { echo "falta $f" >&2; exit 2; }
 done
-[[ "$(stat -c '%U:%G %a' "$DIR/secrets/github_token")" == "root:atlas 640" ]] || {
-  echo "secrets/github_token tiene que ser root:atlas 640" >&2; exit 2; }
+TOKEN="$DIR/secrets/github_token"
+[[ -f "$TOKEN" ]] || { echo "falta $TOKEN" >&2; exit 2; }
+[[ "$(stat -c '%U:%G %a' "$TOKEN")" == "root:atlas 640" ]] || { echo "$TOKEN tiene que ser root:atlas 640" >&2; exit 2; }
+[[ "$(stat -c '%s' "$TOKEN")" -gt 20 ]] || { echo "$TOKEN parece vacio" >&2; exit 2; }
+[[ -w "$ESTADO" ]] || { echo "$ESTADO no es escribible por $(id -un)" >&2; exit 2; }
 
 ATLAS_UID="$(id -u atlas)"
 ATLAS_GID="$(getent group atlas | cut -d: -f3)"
@@ -40,16 +47,16 @@ esperar_sano() {
   return 1
 }
 
-anterior="$(cat "$DIR/imagen" 2>/dev/null || true)"
+anterior="$(cat "$ESTADO/imagen" 2>/dev/null || true)"
 docker pull -q "$IMAGEN"
 arrancar "$IMAGEN"
 if esperar_sano; then
   if [[ -n "$anterior" && "$anterior" != "$IMAGEN" ]]; then
-    echo "$anterior" > "$DIR/imagen.anterior"
+    echo "$anterior" > "$ESTADO/imagen.anterior"
   fi
-  echo "$IMAGEN" > "$DIR/imagen"
+  echo "$IMAGEN" > "$ESTADO/imagen"
   echo "desplegado $IMAGEN"
-  echo "volver atras: sudo $DIR/desplegar.sh \"\$(cat $DIR/imagen.anterior)\""
+  echo "volver atras: $DIR/desplegar.sh \"\$(cat $ESTADO/imagen.anterior)\""
   exit 0
 fi
 docker logs --tail 30 atlas >&2 || true
