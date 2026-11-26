@@ -61,7 +61,7 @@ def terminos_privados(m: dict, infos: dict[str, dict], repo_datos: str | None) -
 
 
 def _ip_que_identifica(texto: str) -> bool:
-    """Loopback (127.0.0.0/8) y 0.0.0.0 no dicen nada de nadie; cualquier otra IP del manifiesto si."""
+    """Las de loopback y la no especificada no dicen nada de nadie; cualquier otra IP del manifiesto si."""
     try:
         ip = ipaddress.IPv4Address(texto)
     except ValueError:
