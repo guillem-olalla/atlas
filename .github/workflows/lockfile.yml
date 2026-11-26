@@ -1,0 +1,26 @@
+# Genera web/package-lock.json en un runner y lo deja como artefacto. En el portatil no se
+# instala nada (no hay sitio en su disco): el lockfile se descarga y se sube en un PR.
+name: lockfile
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lockfile:
+    name: lockfile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - working-directory: web
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-lock
+          path: web/package-lock.json
+          retention-days: 3
